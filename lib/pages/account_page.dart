@@ -1,10 +1,16 @@
 import 'dart:developer';
+import 'package:doanandroid/pages/EditProfile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_icons/flutter_icons.dart';
 import 'package:doanandroid/theme/colors.dart';
-import 'package:doanandroid/util/account_images_json.dart';
 import 'package:doanandroid/util/user.dart';
+import 'package:doanandroid/util/posts.dart';
+import 'package:doanandroid/util/services.dart';
 import 'package:doanandroid/pages/login.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+
+List<Post> _posts;
+User _user;
 
 class AccountPage extends StatefulWidget {
   @override
@@ -12,24 +18,66 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
-  User _user;
   int selectedIndex = 0;
+  bool loadings = false;
 
-  @override
-  void initState(){
-    super.initState();
-    Profile.getUser().then((value) {
-        _user = value;
-      });
+  // void initState() {
+  //   super.initState();
+  //   Services.getPosts().then((posts) {
+  //     setState(() {
+  //       _posts = posts;
+  //       loadings = true;
+  //     });
+  //   });
+  //   Profile.getUser().then((user) {
+  //     setState(() {
+  //       _user = user;
+  //       loadings = true;
+  //     });
+  //   });
+  // }
+
+  getpost() {
+    Services.getPosts().then((posts) {
+      _posts = posts;
+      loadings = true;
+      print('reload account');
+    });
+  }
+
+  getuser() {
+    Profile.getUser().then((user) {
+      _user = user;
+      loadings = true;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    log(_user.username);
+    getpost();
+    getuser();
     var size = MediaQuery.of(context).size;
-    return Scaffold(
-      appBar: getAppBar(),
-      body: getBody(size),
+    return loadings == true
+        ? Scaffold(
+            appBar: getAppBar(),
+            body: getBody(size),
+          )
+        : loading();
+  }
+
+  Widget loading() {
+    return SafeArea(
+      child: Scaffold(
+        body: Center(child: SpinKitFadingCircle(
+          itemBuilder: (BuildContext context, int index) {
+            return DecoratedBox(
+              decoration: BoxDecoration(
+                color: index.isEven ? Colors.red : Colors.green,
+              ),
+            );
+          },
+        )),
+      ),
     );
   }
 
@@ -44,10 +92,13 @@ class _AccountPageState extends State<AccountPage> {
             children: [
               Row(
                 children: [
-                  Icon(Feather.lock, size: 18,),
+                  Icon(
+                    Feather.lock,
+                    size: 18,
+                  ),
                   SizedBox(width: 10),
                   Text(
-                    _user.fullname,
+                    _user.username == null ? "err" : _user.username,
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   )
                 ],
@@ -91,13 +142,13 @@ class _AccountPageState extends State<AccountPage> {
                           height: 100,
                           width: 100,
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(width: 1, color: bgGrey),
-                            image: DecorationImage(
-                              image: NetworkImage(_user.photo),
-                              fit: BoxFit.cover
-                            )
-                          ),
+                              shape: BoxShape.circle,
+                              border: Border.all(width: 1, color: bgGrey),
+                              image: DecorationImage(
+                                  image: NetworkImage(_user.photo == null
+                                      ? "err"
+                                      : _user.photo),
+                                  fit: BoxFit.cover)),
                         ),
                         Positioned(
                           bottom: 0,
@@ -106,10 +157,9 @@ class _AccountPageState extends State<AccountPage> {
                             height: 25,
                             width: 25,
                             decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: primary,
-                              border: Border.all(width: 1, color: bgWhite)
-                            ),
+                                shape: BoxShape.circle,
+                                color: primary,
+                                border: Border.all(width: 1, color: bgWhite)),
                             child: Center(
                               child: Icon(Icons.add, color: bgWhite),
                             ),
@@ -126,36 +176,54 @@ class _AccountPageState extends State<AccountPage> {
                         Column(
                           children: [
                             Text(
-                              "61",
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              _user.post.length.toString() == null
+                                  ? 1
+                                  : _user.post.length.toString(),
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                             Text(
                               "Posts",
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, height: 1.5),
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  height: 1.5),
                             ),
                           ],
                         ),
                         Column(
                           children: [
                             Text(
-                              _user.follower.length.toString(),
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              _user.follower.length.toString() == null
+                                  ? 1
+                                  : _user.follower.length.toString(),
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                             Text(
                               "Follwers",
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, height: 1.5),
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  height: 1.5),
                             ),
                           ],
                         ),
                         Column(
                           children: [
                             Text(
-                              _user.following.length.toString(),
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              _user.following.length.toString() == null
+                                  ? 1
+                                  : _user.following.length.toString(),
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                             Text(
                               "Following",
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, height: 1.5),
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  height: 1.5),
                             ),
                           ],
                         ),
@@ -165,8 +233,8 @@ class _AccountPageState extends State<AccountPage> {
                 ],
               ),
               SizedBox(height: 15),
-              Text(_user.fullname),
-              Text(_user.profile),
+              Text(_user.fullname == null ? "errName" : _user.fullname),
+              Text(_user.profile == null ? "errProfile" : _user.profile),
               SizedBox(height: 15),
               Container(
                 height: 35,
@@ -176,18 +244,20 @@ class _AccountPageState extends State<AccountPage> {
                   borderRadius: BorderRadius.circular(5),
                   color: bgLightGrey,
                 ),
-                child: Center(
-                  child: Text("Edit Profile"),
-                ),
+                child: RaisedButton(
+                    color: Colors.white,
+                    child: Text("Edit Profile"),
+                    onPressed: () => Navigator.push(
+                        context,
+                        new MaterialPageRoute(
+                            builder: (context) => new EditProfile()))),
               ),
               SizedBox(height: 15),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    "Story Highlights",
-                    style: TextStyle(fontWeight: FontWeight.bold)
-                  ),
+                  Text("Story Highlights",
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   Icon(FontAwesome.angle_down, size: 20)
                 ],
               ),
@@ -208,7 +278,12 @@ class _AccountPageState extends State<AccountPage> {
                 width: (size.width * 0.5),
                 child: IconButton(
                   splashRadius: 20,
-                  icon: Icon(FontAwesome.th, color: selectedIndex == 0 ? textBlack : textBlack.withOpacity(0.5),),
+                  icon: Icon(
+                    FontAwesome.th,
+                    color: selectedIndex == 0
+                        ? textBlack
+                        : textBlack.withOpacity(0.5),
+                  ),
                   onPressed: () {
                     setState(() {
                       selectedIndex = 0;
@@ -220,7 +295,12 @@ class _AccountPageState extends State<AccountPage> {
                 width: (size.width * 0.5),
                 child: IconButton(
                   splashRadius: 20,
-                  icon: Icon(FontAwesome.id_badge, color: selectedIndex == 1 ? textBlack : textBlack.withOpacity(0.5),),
+                  icon: Icon(
+                    FontAwesome.id_badge,
+                    color: selectedIndex == 1
+                        ? textBlack
+                        : textBlack.withOpacity(0.5),
+                  ),
                   onPressed: () {
                     setState(() {
                       selectedIndex = 1;
@@ -238,12 +318,14 @@ class _AccountPageState extends State<AccountPage> {
                 Container(
                   height: 1,
                   width: (size.width * 0.5),
-                  decoration: BoxDecoration(color: selectedIndex == 0 ? bgDark : Colors.transparent),
+                  decoration: BoxDecoration(
+                      color: selectedIndex == 0 ? bgDark : Colors.transparent),
                 ),
                 Container(
                   height: 1,
                   width: (size.width * 0.5),
-                  decoration: BoxDecoration(color: selectedIndex == 1 ? bgDark : Colors.transparent),
+                  decoration: BoxDecoration(
+                      color: selectedIndex == 1 ? bgDark : Colors.transparent),
                 ),
               ],
             ),
@@ -266,43 +348,61 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-  Widget getImages(size) {
-    return Wrap(
-      direction: Axis.horizontal,
-      spacing: 3,
-      runSpacing: 3,
-      children: List.generate(images.length, (index) {
-        return Container(
-          height: 150,
-          width: (size.width - 6) / 3,
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: NetworkImage(images[index]),
-              fit: BoxFit.cover
-            )
+  Column buildBioField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: EdgeInsets.only(top: 12.0),
+          child: Text(
+            "Bio",
+            style: TextStyle(color: Colors.grey),
           ),
-        );
-      })
+        ),
+        TextField(
+          //controller: bioController,
+          decoration: InputDecoration(
+            hintText: "Update Bio",
+            //errorText: _bioValid ? null : "Bio too long",
+          ),
+        )
+      ],
     );
   }
+}
 
-  Widget getImageWithTags(size) {
-    return Wrap(
+Widget getImages(size) {
+  return Wrap(
       direction: Axis.horizontal,
       spacing: 3,
       runSpacing: 3,
-      children: List.generate(imageWithTags.length, (index) {
+      children:
+          List.generate(_posts.length == null ? 1 : _posts.length, (index) {
+        Post post = _posts[index];
         return Container(
           height: 150,
           width: (size.width - 6) / 3,
           decoration: BoxDecoration(
-            image: DecorationImage(
-              image: NetworkImage(imageWithTags[index]),
-              fit: BoxFit.cover
-            )
-          ),
+              image: DecorationImage(
+                  image: NetworkImage(post.linkphoto), fit: BoxFit.cover)),
         );
-      })
-    );
-  }
+      }));
+}
+
+Widget getImageWithTags(size) {
+  return Wrap(
+      direction: Axis.horizontal,
+      spacing: 3,
+      runSpacing: 3,
+      children:
+          List.generate(_posts.length == null ? 1 : _posts.length, (index) {
+        Post post = _posts[index];
+        return Container(
+          height: 150,
+          width: (size.width - 6) / 3,
+          decoration: BoxDecoration(
+              image: DecorationImage(
+                  image: NetworkImage(post.linkphoto), fit: BoxFit.cover)),
+        );
+      }));
 }

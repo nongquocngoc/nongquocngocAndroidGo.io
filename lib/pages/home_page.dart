@@ -1,3 +1,4 @@
+import 'package:doanandroid/pages/login.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_icons/flutter_icons.dart';
 import 'package:flutter_svg/svg.dart';
@@ -5,8 +6,11 @@ import 'package:doanandroid/pages/chat_page.dart';
 import 'package:doanandroid/theme/colors.dart';
 import 'package:doanandroid/util/story_json.dart';
 import 'package:doanandroid/util/posts.dart';
+import 'package:doanandroid/util/server.dart';
 import 'package:doanandroid/util/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class HomePage extends StatefulWidget {
   @override
@@ -17,14 +21,17 @@ class _HomePageState extends State<HomePage> {
   List<Post> _posts;
   bool loadings = false;
 
+  getpost() {
+    Services.getPosts().then((posts) {
+      _posts = posts;
+      loadings = true;
+      print('reload homepage');
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    Services.getPosts().then((posts) {
-      setState(() {
-        _posts = posts;
-        loadings = true;
-      });
-    });
+    getpost();
     var size = MediaQuery.of(context).size;
     return loadings == true
         ? Scaffold(
@@ -51,29 +58,55 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget getAppBar() {
-    setState(() {
-      return PreferredSize(
-        preferredSize: Size.fromHeight(55),
-        child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.all(8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                SvgPicture.asset("assets/images/logo.svg", width: 90),
-                IconButton(
-                    splashRadius: 15,
-                    icon: Icon(FontAwesome5Brands.facebook_messenger),
-                    onPressed: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => ChatPage()));
-                    })
-              ],
-            ),
+    return PreferredSize(
+      preferredSize: Size.fromHeight(55),
+      child: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              SvgPicture.asset("assets/images/logo.svg", width: 90),
+              IconButton(
+                  splashRadius: 15,
+                  icon: Icon(FontAwesome5Brands.facebook_messenger),
+                  onPressed: () {
+                    Navigator.push(
+                        context, MaterialPageRoute(builder: (_) => ChatPage()));
+                  })
+            ],
           ),
         ),
-      );
-    });
+      ),
+    );
+  }
+
+  islike(String postid, int like, String username, String photo,
+      int islike) async {
+    int islikes = (islike == 1 ? 2 : 1);
+    if (like > 0){
+      if(islikes ==1){
+        like = like -1;
+      }else{
+        like = like +1;
+      }
+    }
+    print(islikes);
+    var data = {
+      'user': {'username': username, 'photo': photo},
+      'islike': islikes,
+      'like': like
+    };
+    final id = postid;
+    final sever = Server.setupdatepost;
+    String url = '$sever/$id';
+    print(url);
+    final http.Response response = await http.post(Uri.parse(url),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(data));
+    print(response.body);
   }
 
   Widget getBody(size) {
@@ -229,7 +262,7 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           IconButton(
                             splashRadius: 15,
-                            icon: post.islike
+                            icon: post.islike == 2
                                 ? SvgPicture.asset(
                                     "assets/images/heart_red.svg",
                                     width: 25,
@@ -240,7 +273,10 @@ class _HomePageState extends State<HomePage> {
                                     width: 25,
                                     height: 25,
                                   ),
-                            onPressed: () {},
+                            onPressed: () {
+                              islike(post.id, post.like, post.user.username,
+                                  post.user.photo, post.islike);
+                            },
                           ),
                           IconButton(
                             splashRadius: 15,

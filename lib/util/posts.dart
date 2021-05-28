@@ -25,7 +25,7 @@ class Post {
   Userpost user;
   String body;
   String linkphoto;
-  bool islike;
+  int islike;
   int like;
   DateTime datetime;
   String location;

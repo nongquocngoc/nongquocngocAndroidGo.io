@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:doanandroid/pages/account_page.dart';
-import 'package:doanandroid/pages/activity_page.dart';
 import 'package:doanandroid/pages/home_page.dart';
 import 'package:doanandroid/pages/new_post_page.dart';
+import 'package:doanandroid/pages/activity_page.dart';
 import 'package:doanandroid/pages/search_page.dart';
+import 'package:doanandroid/pages/login.dart';
 import 'package:doanandroid/theme/colors.dart';
 import 'package:doanandroid/util/bottom_navigation_bar_json.dart';
+import 'package:doanandroid/util/user.dart';
 
 
 class RootApp extends StatefulWidget {
@@ -16,7 +18,8 @@ class RootApp extends StatefulWidget {
 
 class _RootAppState extends State<RootApp> {
   int indexPage = 0;
-
+  User _user;
+  bool loadings = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(

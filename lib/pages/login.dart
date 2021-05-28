@@ -10,7 +10,6 @@ import 'package:doanandroid/util/user.dart';
 import 'package:doanandroid/util/server.dart';
 
 User user;
-
 class Login extends StatefulWidget {
   @override
   _LoginState createState() => _LoginState();
@@ -27,7 +26,7 @@ class _LoginState extends State<Login> {
 
   @override
   Widget build(BuildContext context) {
-    // var size = MediaQuery.of(context).size;
+    var size = MediaQuery.of(context).size;
     return Scaffold(
       body: getBody(),
     );
@@ -68,6 +67,7 @@ class _LoginState extends State<Login> {
   Widget _loginContainer() {
     return new GestureDetector(
       onTap: _login,
+
       child: new Container(
         alignment: Alignment.center,
         margin: const EdgeInsets.only(top: 10.0),
@@ -188,7 +188,7 @@ class _LoginState extends State<Login> {
     );
   }
 
-   _login() async {
+   _login() async{
     final strUserName = userId.text;
     final strPassWord = password.text;
     var data = {'username': strUserName, 'password': strPassWord};
@@ -229,7 +229,7 @@ class _LoginState extends State<Login> {
   
  static getuserid(){
     String getuserid = user.userid;
-    print("day la state login/" + getuserid);
+    print(getuserid);
     return getuserid;
   }
   
@@ -256,7 +256,6 @@ class Profile {
   static String s = Server.setuser;
   static String url = '$s/$server';
   static Future<User> getUser() async {
-    log (url);
     try {
           final response = await http.get(Uri.parse(url));
           if (response.statusCode == 200) {
