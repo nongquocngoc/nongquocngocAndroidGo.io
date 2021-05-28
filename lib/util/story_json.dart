@@ -37,7 +37,7 @@ const stories = [
   },
   {
     "id": 6,
-    "imageUrl": "https://instagram.fpnh2-2.fna.fbcdn.net/v/t51.2885-19/s150x150/103731611_578148556073101_3800463684613671023_n.jpg?_nc_ht=instagram.fpnh2-2.fna.fbcdn.net&_nc_ohc=ITKnOBR_r5EAX9aWUc8&tp=1&oh=66228c2d676e4ab023fdcf1317a32756&oe=601C9910",
+    "imageUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTvSX1uJrRCJAyRFTW9XVkb5dbT8eEaaBa74g&usqp=CAU",
     "username": "primiily",
     "isStory": true,
     "isAdd": false

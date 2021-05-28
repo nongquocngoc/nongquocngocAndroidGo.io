@@ -21,6 +21,7 @@ class UploadPage extends StatefulWidget {
 
 class _UploadPageState extends State<UploadPage>
     with AutomaticKeepAliveClientMixin<UploadPage> {
+  bool _isLoaderVisible = false;
   User _user;
 
   @override
@@ -66,7 +67,6 @@ class _UploadPageState extends State<UploadPage>
         },
         body: json.encode(data));
     print(response.body);
-    uploading == true;
     return clearPostInfo();
   }
 
@@ -186,33 +186,9 @@ class _UploadPageState extends State<UploadPage>
   }
 
 
-  loading(){
-    return LoaderOverlay(
-      useDefaultLoading: false,
-      overlayWidget: Center(
-        child: SpinKitCubeGrid(
-          color: Colors.red,
-          size: 50.0,
-        ),
-      ),
-      overlayOpacity: 0.8
-    );
-    // SpinKitFadingCircle(
-    //   itemBuilder: (BuildContext context, int index) {
-    //     return DecoratedBox(
-    //       decoration: BoxDecoration(
-    //         color: index.isEven ? Colors.red : Colors.green,
-    //       ),
-    //     );
-    //   },
-    // );
-
-  }
-
   startUpload() {
     String fileName = file.path.split('/').last;
     upload(fileName);
-    loading();
   }
 
   upload(String fileName) async {
@@ -230,6 +206,16 @@ class _UploadPageState extends State<UploadPage>
     _data = dataFromJson(response.body);
     print(_data.data.url);
     newpost();
+    await Future.delayed(Duration(seconds: 5));
+    setState(() {
+      _isLoaderVisible = context.loaderOverlay.visible;
+    });
+    if (_isLoaderVisible) {
+      context.loaderOverlay.hide();
+    }
+    setState(() {
+      _isLoaderVisible = context.loaderOverlay.visible;
+    });
   }
 
 
@@ -345,7 +331,7 @@ class _UploadPageState extends State<UploadPage>
               height: 110.0,
               alignment: Alignment.center,
               child: RaisedButton.icon(
-                onPressed: () {
+                onPressed: (){
                   context.loaderOverlay.show();
                   startUpload();
                 },

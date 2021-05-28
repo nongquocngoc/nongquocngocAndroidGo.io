@@ -21,12 +21,23 @@ class _HomePageState extends State<HomePage> {
   List<Post> _posts;
   bool loadings = false;
 
-  getpost() {
+  void initState() {
+    super.initState();
     Services.getPosts().then((posts) {
-      _posts = posts;
-      loadings = true;
-      print('reload homepage');
+      setState(() {
+        _posts = posts;
+        loadings = true;
+        print('reload initstate');
+      });
     });
+  }
+
+   getpost() {
+    Services.getPosts().then((posts) {
+        _posts = posts;
+        loadings = true;
+        print('reload homepage');
+      });
   }
 
   @override
@@ -84,11 +95,11 @@ class _HomePageState extends State<HomePage> {
   islike(String postid, int like, String username, String photo,
       int islike) async {
     int islikes = (islike == 1 ? 2 : 1);
-    if (like > 0){
-      if(islikes ==1){
-        like = like -1;
-      }else{
-        like = like +1;
+    if (like > 0) {
+      if (islikes == 1) {
+        like = like - 1;
+      } else {
+        like = like + 1;
       }
     }
     print(islikes);
@@ -273,9 +284,23 @@ class _HomePageState extends State<HomePage> {
                                     width: 25,
                                     height: 25,
                                   ),
-                            onPressed: () {
-                              islike(post.id, post.like, post.user.username,
-                                  post.user.photo, post.islike);
+                            // icon: post.islike == 2
+                            //     ? SvgPicture.asset(
+                            //         "assets/images/heart_red.svg",
+                            //         width: 25,
+                            //         height: 25,
+                            //       )
+                            //     : SvgPicture.asset(
+                            //         "assets/images/heart.svg",
+                            //         width: 25,
+                            //         height: 25,
+                            //       ),
+                            onPressed: ()  {
+                              setState(() {
+                                islike(post.id, post.like, post.user.username,
+                                    post.user.photo, post.islike);
+                                post.islike = post.islike ==  2 ? 1 : 2;
+                              });
                             },
                           ),
                           IconButton(

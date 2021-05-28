@@ -3,28 +3,32 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/widgets.dart';
 import 'package:doanandroid/pages/root_app.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 import 'package:doanandroid/util/user.dart';
 import 'package:doanandroid/util/server.dart';
+import 'package:loader_overlay/loader_overlay.dart';
 
 User user;
+
 class Login extends StatefulWidget {
   @override
   _LoginState createState() => _LoginState();
 }
 
 class _LoginState extends State<Login> {
-
- static final TextEditingController userId = new TextEditingController();
- static final TextEditingController password = new TextEditingController();
+  bool _isLoaderVisible = false;
+  static final TextEditingController userId = new TextEditingController();
+  static final TextEditingController password = new TextEditingController();
   var _textStyleBlack = new TextStyle(fontSize: 12.0, color: Colors.black);
   var _textStyleGrey = new TextStyle(fontSize: 12.0, color: Colors.grey);
   var _textStyleBlueGrey =
       new TextStyle(fontSize: 12.0, color: Colors.blueGrey);
 
   @override
+
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size;
     return Scaffold(
@@ -35,15 +39,14 @@ class _LoginState extends State<Login> {
   Widget _userIDEditContainer() {
     return new Container(
       child: new TextField(
-        controller: userId,
-        decoration: new InputDecoration(
-            hintText: 'Phone number,email or username',
-            border: new OutlineInputBorder(
-              borderSide: new BorderSide(color: Colors.black),
-            ),
-            isDense: true),
-        style: _textStyleBlack
-      ),
+          controller: userId,
+          decoration: new InputDecoration(
+              hintText: 'Phone number,email or username',
+              border: new OutlineInputBorder(
+                borderSide: new BorderSide(color: Colors.black),
+              ),
+              isDense: true),
+          style: _textStyleBlack),
     );
   }
 
@@ -66,8 +69,20 @@ class _LoginState extends State<Login> {
 
   Widget _loginContainer() {
     return new GestureDetector(
-      onTap: _login,
-
+      onTap: () async{
+        context.loaderOverlay.show();
+        _login();
+        await Future.delayed(Duration(seconds: 3));
+        setState(() {
+          _isLoaderVisible = context.loaderOverlay.visible;
+        });
+        if (_isLoaderVisible) {
+          context.loaderOverlay.hide();
+        }
+        setState(() {
+          _isLoaderVisible = context.loaderOverlay.visible;
+        });
+      },
       child: new Container(
         alignment: Alignment.center,
         margin: const EdgeInsets.only(top: 10.0),
@@ -130,65 +145,74 @@ class _LoginState extends State<Login> {
   }
 
   Widget getBody() {
-    return new Container(
-      alignment: Alignment.center,
-      padding: const EdgeInsets.all(25.0),
-      child: new Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          new Padding(
-            padding: const EdgeInsets.only(top: 25.0, bottom: 15.0),
-            child: new Text(
-              'Instagram',
-              style: new TextStyle(fontFamily: 'Billabong', fontSize: 50.0),
-            ),
+    return LoaderOverlay(
+        useDefaultLoading: false,
+        overlayWidget: Center(
+          child: SpinKitCircle(
+            color: Colors.red,
+            size: 50.0,
           ),
-          _userIDEditContainer(),
-          _passwordEditContainer(),
-          _loginContainer(),
-          new Row(
+        ),
+        overlayOpacity: 0.8,
+        child: Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(25.0),
+          child: new Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              new Text(
-                'Forgot your login details?',
-                style: _textStyleGrey,
-              ),
-              new FlatButton(
-                onPressed: () {},
+              new Padding(
+                padding: const EdgeInsets.only(top: 25.0, bottom: 15.0),
                 child: new Text(
-                  'Get help signing in.',
-                  style: _textStyleBlueGrey,
+                  'Instagram',
+                  style: new TextStyle(fontFamily: 'Billabong', fontSize: 50.0),
                 ),
-              )
+              ),
+              _userIDEditContainer(),
+              _passwordEditContainer(),
+              _loginContainer(),
+              new Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  new Text(
+                    'Forgot your login details?',
+                    style: _textStyleGrey,
+                  ),
+                  new FlatButton(
+                    onPressed: () {},
+                    child: new Text(
+                      'Get help signing in.',
+                      style: _textStyleBlueGrey,
+                    ),
+                  )
+                ],
+              ),
+              new Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  new Container(
+                    height: 1.0,
+                    width: MediaQuery.of(context).size.width / 2.7,
+                    color: Colors.grey,
+                    child: new ListTile(),
+                  ),
+                  new Text(
+                    ' OR ',
+                    style: new TextStyle(color: Colors.blueGrey),
+                  ),
+                  new Container(
+                    height: 1.0,
+                    width: MediaQuery.of(context).size.width / 2.7,
+                    color: Colors.grey,
+                  ),
+                ],
+              ),
+              _facebookContainer()
             ],
           ),
-          new Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              new Container(
-                height: 1.0,
-                width: MediaQuery.of(context).size.width / 2.7,
-                color: Colors.grey,
-                child: new ListTile(),
-              ),
-              new Text(
-                ' OR ',
-                style: new TextStyle(color: Colors.blueGrey),
-              ),
-              new Container(
-                height: 1.0,
-                width: MediaQuery.of(context).size.width / 2.7,
-                color: Colors.grey,
-              ),
-            ],
-          ),
-          _facebookContainer()
-        ],
-      ),
-    );
+        ));
   }
 
-   _login() async{
+  _login() async {
     final strUserName = userId.text;
     final strPassWord = password.text;
     var data = {'username': strUserName, 'password': strPassWord};
@@ -226,13 +250,13 @@ class _LoginState extends State<Login> {
           });
     }
   }
-  
- static getuserid(){
+
+  static getuserid() {
     String getuserid = user.userid;
     print(getuserid);
     return getuserid;
   }
-  
+
   _showEmptyDialog(String title) {
     showDialog(
         context: context,
@@ -250,42 +274,42 @@ class _LoginState extends State<Login> {
   }
 }
 
-
 class Profile {
   static String server = _LoginState.getuserid();
   static String s = Server.setuser;
   static String url = '$s/$server';
+
   static Future<User> getUser() async {
     try {
-          final response = await http.get(Uri.parse(url));
-          if (response.statusCode == 200) {
-            final User users = userFromJson(response.body);
-            return users;
-          } else {
-            return User();
-          }
-        } catch (e) {
-          return User();
-        }
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final User users = userFromJson(response.body);
+        return users;
+      } else {
+        return User();
+      }
+    } catch (e) {
+      return User();
+    }
   }
-  // static Future<User> getUser() async {
-  //   var username = _LoginState.userId.text;
-  //   var password = _LoginState.password.text;
-  //   try {
-  //     var data = {'username': "test1", 'password': "1"};
-  //     final response = await http.post(Uri.parse(url),
-  //         headers: <String, String>{
-  //           'Content-Type': 'application/json',
-  //         },
-  //         body: json.encode(data));
-  //     if (response.statusCode == 200) {
-  //       final User users = userFromJson(response.body);
-  //       return users;
-  //     } else {
-  //       return null;
-  //     }
-  //   } catch (e) {
-  //     return null;
-  //   }
-  // }
+// static Future<User> getUser() async {
+//   var username = _LoginState.userId.text;
+//   var password = _LoginState.password.text;
+//   try {
+//     var data = {'username': "test1", 'password': "1"};
+//     final response = await http.post(Uri.parse(url),
+//         headers: <String, String>{
+//           'Content-Type': 'application/json',
+//         },
+//         body: json.encode(data));
+//     if (response.statusCode == 200) {
+//       final User users = userFromJson(response.body);
+//       return users;
+//     } else {
+//       return null;
+//     }
+//   } catch (e) {
+//     return null;
+//   }
+// }
 }

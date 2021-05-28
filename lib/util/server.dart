@@ -1,5 +1,5 @@
 class Server{
-  static const String url = 'http://0bdc5c8c24bc.ngrok.io';
+  static const String url = 'http://23ff621e39c3.ngrok.io';
   static const String setpost = '$url/feeds';
   static const String setlogin = '$url/login';
   static const String setregister = '$url/register';
