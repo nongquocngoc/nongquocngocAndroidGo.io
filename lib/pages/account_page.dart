@@ -178,7 +178,7 @@ class _AccountPageState extends State<AccountPage> {
                             Text(
                               _user.post.length.toString() == null
                                   ? 1
-                                  : _user.post.length.toString(),
+                                  : (_user.post.length-1).toString(),
                               style: TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold),
                             ),

@@ -1,11 +1,12 @@
 import 'dart:developer';
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import "package:flutter/material.dart";
 import 'package:doanandroid/util/user.dart';
 import 'package:doanandroid/util/server.dart';
 import 'package:doanandroid/pages/login.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-
+import 'package:loader_overlay/loader_overlay.dart';
 import 'dart:io';
 import 'package:image/image.dart' as ImD;
 import 'package:doanandroid/util/uploadimage.dart';
@@ -25,14 +26,15 @@ class _EditProfileState extends State<EditProfile> {
   String s = 'notok';
   File file = File('');
   Data _data;
-  bool uploading = false;
+  bool confirm = false;
   String base64Image;
   String status = '';
   String postId = Uuid().v4();
   TextEditingController fullnamecontroller = TextEditingController();
   TextEditingController profilecontroller = TextEditingController();
   TextEditingController passwordcontroller = TextEditingController();
-
+  TextEditingController newpasswordcontroller = TextEditingController();
+  TextEditingController confirmpasscontroller = TextEditingController();
 
   Column buildDisplayNameField() {
     return Column(
@@ -136,6 +138,225 @@ class _EditProfileState extends State<EditProfile> {
     );
   }
 
+  changePass(mContext) {
+    return showDialog(
+      context: mContext,
+      builder: (context) {
+        return SimpleDialog(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              Padding(
+                  padding: EdgeInsets.only(top: 12.0),
+                  child: Text(
+                    "Old Password",
+                    style: TextStyle(color: Colors.green),
+                  )),
+              TextField(
+                obscureText: true,
+                controller: passwordcontroller,
+                decoration: InputDecoration(
+                  hintText: ("nhap mat khau cu"),
+                  //errorText: _displayNameValid ? null : "Display Name too short",
+                ),
+              )
+            ],
+          ),
+          children: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SimpleDialogOption(
+                  child: Text(
+                    "Cancel",
+                    style: TextStyle(
+                      color: Colors.black,
+                    ),
+                  ),
+                  onPressed: () {
+                    passwordcontroller.clear();
+                    Navigator.pop(context);
+                  },
+                ),
+                SimpleDialogOption(
+                  child: Text(
+                    "CONFIRM",
+                    style: TextStyle(
+                      color: Colors.green,
+                    ),
+                  ),
+                  onPressed: () async {
+                    if (passwordcontroller.text.isEmpty) {
+                      _showEmptyDialog("Type something");
+                    } else {
+                      confirmPass();
+                    }
+                  },
+                ),
+              ],
+            )
+          ],
+        );
+      },
+    );
+  }
+
+  newPass(mContext) {
+    return showDialog(
+      context: mContext,
+      builder: (context) {
+        return SimpleDialog(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              Padding(
+                  padding: EdgeInsets.only(top: 12.0),
+                  child: Text(
+                    "New Password",
+                    style: TextStyle(color: Colors.green),
+                  )),
+              TextField(
+                obscureText: true,
+                controller: newpasswordcontroller,
+                decoration: InputDecoration(
+                  hintText: ("nhap mat khau moi"),
+                  //errorText: _displayNameValid ? null : "Display Name too short",
+                ),
+              ),
+              TextField(
+                obscureText: true,
+                controller: confirmpasscontroller,
+                decoration: InputDecoration(
+                  hintText: ("xac nhan mat khau"),
+                  //errorText: _displayNameValid ? null : "Display Name too short",
+                ),
+              )
+            ],
+          ),
+          children: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SimpleDialogOption(
+                  child: Text(
+                    "Cancel",
+                    style: TextStyle(
+                      color: Colors.black,
+                    ),
+                  ),
+                  onPressed: () {
+                    passwordcontroller.clear();
+                    newpasswordcontroller.clear();
+                    confirmpasscontroller.clear();
+                    Navigator.pop(context);
+                    Navigator.pop(context);
+                  },
+                ),
+                SimpleDialogOption(
+                  child: Text(
+                    "CONFIRM",
+                    style: TextStyle(
+                      color: Colors.green,
+                    ),
+                  ),
+                  onPressed: () {
+                    if (newpasswordcontroller.text.isEmpty ||
+                        confirmpasscontroller.text.isEmpty) {
+                      _showEmptyDialog("Type something");
+                    } else if (newpasswordcontroller.text !=
+                        confirmpasscontroller.text) {
+                      _showEmptyDialog("password not contrain");
+                    } else {
+                      updatePass();
+                    }
+                  },
+                ),
+              ],
+            )
+          ],
+        );
+      },
+    );
+  }
+
+  updatePass() async {
+    final password = confirmpasscontroller.text;
+    var data = {'password': password};
+    String sever = Server.setuser;
+    String id = _user.userid;
+    String url = '$sever/$id';
+    print(url);
+    final http.Response response = await http.put(Uri.parse(url),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(data));
+    print(response.body);
+    var res = response.statusCode;
+    print(res);
+    if (res == 200) {
+      showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) => new CupertinoAlertDialog(
+                content: new Text("doi mat khau thanh cong"),
+                actions: <Widget>[
+                  FlatButton(
+                      onPressed: () {
+                        passwordcontroller.clear();
+                        newpasswordcontroller.clear();
+                        confirmpasscontroller.clear();
+                        Navigator.pop(context);
+                        Navigator.pop(context);
+                        Navigator.pop(context);
+                      },
+                      child: new Text("OK"))
+                ],
+              ));
+    } else {
+      _showEmptyDialog("doi mat khau khong thanh cong or ");
+    }
+  }
+
+  confirmPass() async {
+    final password = passwordcontroller.text;
+    final username = _user.username;
+    var data = {'password': password, 'username': username};
+    String sever = Server.setlogin;
+    String url = '$sever';
+    print(url);
+    final http.Response response = await http.post(Uri.parse(url),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(data));
+    print(response.body);
+    var res = response.statusCode;
+    print(res);
+    print("$username : $password");
+    if (res == 200) {
+      newPass(context);
+    } else {
+      _showEmptyDialog("wrong password or ");
+    }
+  }
+
+  _showEmptyDialog(String title) {
+    showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) => new CupertinoAlertDialog(
+              content: new Text("$title can't be empty"),
+              actions: <Widget>[
+                FlatButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: new Text("OK"))
+              ],
+            ));
+  }
+
   captureImageWithCamera() async {
     Navigator.pop(context);
     File imagefile = await ImagePicker.pickImage(
@@ -171,23 +392,29 @@ class _EditProfileState extends State<EditProfile> {
     });
   }
 
-
   clearPostInfo() async {
     setState(() {
       file = File('');
     });
     Navigator.pop(context);
   }
+
   startUpload() {
-    String fileName = file.path.split('/').last;
-    // debugPrint(fileName);
-    upload(fileName);
+    if (s == "ok") {
+      String fileName = file.path.split('/').last;
+      log(fileName);
+      upload(fileName);
+    } else {
+      print(_data);
+      update();
+    }
   }
+
   upload(String fileName) async {
     List<int> imageBytes = file.readAsBytesSync();
     base64Image = base64.encode(imageBytes);
     log(fileName);
-    final request =  http.MultipartRequest(
+    final request = http.MultipartRequest(
       "POST",
       Uri.parse(
           'https://api.imgbb.com/1/upload?key=65a52e41be0d263e2c5e13284c1da0af'),
@@ -201,22 +428,22 @@ class _EditProfileState extends State<EditProfile> {
     print(_data.data.url);
     update();
   }
+
   update() async {
-    final fullname = fullnamecontroller.text == null ? _user.fullname : fullnamecontroller.text;
-    final linkphoto = _data.data.url == null ? _user.photo :_data.data.url;
-    final profile = profilecontroller.text == null ? _user.profile : profilecontroller.text;
-    var data = {
-      'fullname': fullname,
-      'profile': profile,
-      'photo' : linkphoto
-    };
+    final fullname = fullnamecontroller.text == null
+        ? _user.fullname
+        : fullnamecontroller.text;
+    final linkphoto = _data == null ? _user.photo : _data.data.url;
+    final profile =
+        profilecontroller.text == null ? _user.profile : profilecontroller.text;
+    var data = {'fullname': fullname, 'profile': profile, 'photo': linkphoto};
     String sever = Server.setupdateuser;
     String id = _user.userid;
     String url = '$sever/$id';
     print(url);
-    print (fullname);
-    print (profile);
-    print (linkphoto);
+    print(fullname);
+    print(profile);
+    print(linkphoto);
     final http.Response response = await http.put(Uri.parse(url),
         headers: <String, String>{
           'Content-Type': 'application/json',
@@ -227,7 +454,6 @@ class _EditProfileState extends State<EditProfile> {
   }
 
   @override
-
   Widget build(BuildContext context) {
     Profile.getUser().then((value) {
       setState(() {
@@ -258,9 +484,7 @@ class _EditProfileState extends State<EditProfile> {
               ],
             ),
             body: ListView(
-
               children: <Widget>[
-
                 Container(
                   child: Column(
                     children: <Widget>[
@@ -279,7 +503,9 @@ class _EditProfileState extends State<EditProfile> {
                                     border:
                                         Border.all(width: 1, color: Colors.red),
                                     image: DecorationImage(
-                                        image: s != ('ok')? NetworkImage(_user.photo): FileImage(file),
+                                        image: s != ('ok')
+                                            ? NetworkImage(_user.photo)
+                                            : FileImage(file),
                                         fit: BoxFit.cover))),
                             RaisedButton(
                               shape: RoundedRectangleBorder(
@@ -306,7 +532,19 @@ class _EditProfileState extends State<EditProfile> {
                         ),
                       ),
                       RaisedButton(
-                        onPressed: startUpload,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(9.0),
+                        ),
+                        child: Text(
+                          "Change password",
+                          style: TextStyle(color: Colors.white, fontSize: 20.0),
+                        ),
+                        color: Colors.green,
+                        onPressed: () => changePass(context),
+                      ),
+                      Divider(),
+                      RaisedButton(
+                        onPressed: () => startUpload(),
                         child: Text(
                           "Update Profile",
                           style: TextStyle(
@@ -333,6 +571,5 @@ class _EditProfileState extends State<EditProfile> {
             ),
           )
         : loading();
-
   }
 }

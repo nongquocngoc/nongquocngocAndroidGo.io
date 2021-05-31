@@ -2,7 +2,7 @@
 const stories = [
   {
     "id": 1,
-    "imageUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTvSX1uJrRCJAyRFTW9XVkb5dbT8eEaaBa74g&usqp=CAU",
+    "imageUrl": "https://i.ibb.co/tYm1cR3/Screenshot-20210527-224614.png",
     "username": "Your Story",
     "isStory": false,
     "isAdd": true
@@ -39,34 +39,6 @@ const stories = [
     "id": 6,
     "imageUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTvSX1uJrRCJAyRFTW9XVkb5dbT8eEaaBa74g&usqp=CAU",
     "username": "primiily",
-    "isStory": true,
-    "isAdd": false
-  },
-  {
-    "id": 7,
-    "imageUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTvSX1uJrRCJAyRFTW9XVkb5dbT8eEaaBa74g&usqp=CAU",
-    "username": "pinomyim",
-    "isStory": true,
-    "isAdd": false
-  },
-  {
-    "id": 8,
-    "imageUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTvSX1uJrRCJAyRFTW9XVkb5dbT8eEaaBa74g&usqp=CAU",
-    "username": "roses_are_rosie",
-    "isStory": true,
-    "isAdd": false
-  },
-  {
-    "id": 9,
-    "imageUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTvSX1uJrRCJAyRFTW9XVkb5dbT8eEaaBa74g&usqp=CAU",
-    "username": "mookworranit",
-    "isStory": true,
-    "isAdd": false
-  },
-  {
-    "id": 10,
-    "imageUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTvSX1uJrRCJAyRFTW9XVkb5dbT8eEaaBa74g&usqp=CAU",
-    "username": "minashe",
     "isStory": true,
     "isAdd": false
   },

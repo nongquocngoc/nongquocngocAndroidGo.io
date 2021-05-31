@@ -32,12 +32,12 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-   getpost() {
+  getpost() {
     Services.getPosts().then((posts) {
-        _posts = posts;
-        loadings = true;
-        print('reload homepage');
-      });
+      _posts = posts;
+      loadings = true;
+      print('reload homepage');
+    });
   }
 
   @override
@@ -101,11 +101,15 @@ class _HomePageState extends State<HomePage> {
       } else {
         like = like + 1;
       }
+    } else {
+      if (islikes == 2) {
+        like = like + 1;
+      }
     }
-    print(islikes);
+    print(islike);
     var data = {
       'user': {'username': username, 'photo': photo},
-      'islike': islikes,
+      'islike': islike == 1 ? 2 : 1,
       'like': like
     };
     final id = postid;
@@ -295,11 +299,11 @@ class _HomePageState extends State<HomePage> {
                             //         width: 25,
                             //         height: 25,
                             //       ),
-                            onPressed: ()  {
+                            onPressed: () {
                               setState(() {
                                 islike(post.id, post.like, post.user.username,
                                     post.user.photo, post.islike);
-                                post.islike = post.islike ==  2 ? 1 : 2;
+                                post.islike = post.islike == 2 ? 1 : 2;
                               });
                             },
                           ),
@@ -330,7 +334,7 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${post.like} likes',
+                        '${post.like - 1} likes',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       SizedBox(height: 5),
@@ -359,12 +363,12 @@ class _HomePageState extends State<HomePage> {
                                   height: 28,
                                   width: 28,
                                   decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border:
-                                          Border.all(width: 1, color: bgGrey),
-                                      image: DecorationImage(
-                                          image: NetworkImage(post.user.photo),
-                                          fit: BoxFit.cover)),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(width: 1, color: bgGrey),
+                                    image: DecorationImage(
+                                        image: NetworkImage(post.user.photo),
+                                        fit: BoxFit.cover),
+                                  ),
                                 ),
                                 Container(
                                   height: 25,
