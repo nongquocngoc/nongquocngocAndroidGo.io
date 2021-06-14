@@ -8,6 +8,7 @@ import 'package:doanandroid/util/posts.dart';
 import 'package:doanandroid/util/services.dart';
 import 'package:doanandroid/pages/login.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 List<Post> _posts;
 User _user;
@@ -21,41 +22,44 @@ class _AccountPageState extends State<AccountPage> {
   int selectedIndex = 0;
   bool loadings = false;
 
-  // void initState() {
-  //   super.initState();
-  //   Services.getPosts().then((posts) {
-  //     setState(() {
-  //       _posts = posts;
-  //       loadings = true;
-  //     });
-  //   });
-  //   Profile.getUser().then((user) {
-  //     setState(() {
-  //       _user = user;
-  //       loadings = true;
-  //     });
-  //   });
-  // }
-
-  getpost() {
+  void initState() {
+    super.initState();
     Services.getPosts().then((posts) {
-      _posts = posts;
-      loadings = true;
-      print('reload account');
+      setState(() {
+        _posts = posts;
+        loadings = true;
+      });
+    });
+    Profile.getUser().then((user) {
+      setState(() {
+        _user = user;
+        loadings = true;
+      });
     });
   }
+
 
   getuser() {
     Profile.getUser().then((user) {
       _user = user;
       loadings = true;
+      log(_user.id.toString());
+    });
+  }
+
+  getpost(String username) {
+    Services.getPostsbyusername(username).then((posts) {
+      _posts = posts;
+      loadings = true;
+      print('reload in account page');
+      return _posts;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    getpost();
     getuser();
+    getpost(_user.id);
     var size = MediaQuery.of(context).size;
     return loadings == true
         ? Scaffold(
@@ -98,7 +102,7 @@ class _AccountPageState extends State<AccountPage> {
                   ),
                   SizedBox(width: 10),
                   Text(
-                    _user.username == null ? "err" : _user.username,
+                    _user.username,
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   )
                 ],
@@ -113,7 +117,12 @@ class _AccountPageState extends State<AccountPage> {
                   IconButton(
                     splashRadius: 15,
                     icon: Icon(FontAwesome.bars),
-                    onPressed: () {},
+                    onPressed: () async {
+                      logOut(context);
+                      final prefs = await SharedPreferences.getInstance();
+                      prefs.setString("sessionuser", '');
+                      print('day la fress logout: ' + prefs.getString("sessionuser"));
+                      },
                   ),
                 ],
               ),
@@ -122,6 +131,29 @@ class _AccountPageState extends State<AccountPage> {
         ),
       ),
     );
+  }
+
+  logOut(mContext) {
+    return showDialog(
+        context: mContext,
+        builder: (context) {
+          return SimpleDialog(
+            children: [
+              SimpleDialogOption(
+                child: Text(
+                  "LogOut",
+                  style: TextStyle(
+                    color: Colors.black,
+                  ),
+                ),
+                onPressed: () async {
+                  Navigator.pushNamedAndRemoveUntil(
+                      context, '/login', ModalRoute.withName('/login'));
+                },
+              ),
+            ],
+          );
+        });
   }
 
   Widget getBody(size) {
@@ -176,9 +208,7 @@ class _AccountPageState extends State<AccountPage> {
                         Column(
                           children: [
                             Text(
-                              _user.post.length.toString() == null
-                                  ? 1
-                                  : (_user.post.length-1).toString(),
+                              (_user.post.length - 1).toString(),
                               style: TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold),
                             ),
@@ -194,9 +224,7 @@ class _AccountPageState extends State<AccountPage> {
                         Column(
                           children: [
                             Text(
-                              _user.follower.length.toString() == null
-                                  ? 1
-                                  : _user.follower.length.toString(),
+                             (_user.follower.length - 1).toString(),
                               style: TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold),
                             ),
@@ -212,9 +240,7 @@ class _AccountPageState extends State<AccountPage> {
                         Column(
                           children: [
                             Text(
-                              _user.following.length.toString() == null
-                                  ? 1
-                                  : _user.following.length.toString(),
+                             (_user.following.length - 1).toString(),
                               style: TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold),
                             ),
@@ -377,7 +403,7 @@ Widget getImages(size) {
       spacing: 3,
       runSpacing: 3,
       children:
-          List.generate(_posts.length == null ? 1 : _posts.length, (index) {
+          List.generate(_posts.length, (index) {
         Post post = _posts[index];
         return Container(
           height: 150,
@@ -395,7 +421,7 @@ Widget getImageWithTags(size) {
       spacing: 3,
       runSpacing: 3,
       children:
-          List.generate(_posts.length == null ? 1 : _posts.length, (index) {
+          List.generate(_posts.length, (index) {
         Post post = _posts[index];
         return Container(
           height: 150,

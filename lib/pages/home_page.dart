@@ -8,18 +8,61 @@ import 'package:doanandroid/util/story_json.dart';
 import 'package:doanandroid/util/posts.dart';
 import 'package:doanandroid/util/server.dart';
 import 'package:doanandroid/util/services.dart';
+import 'package:doanandroid/util/comment.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:developer';
+import 'dart:convert';
+import 'package:flutter/cupertino.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'dart:developer';
+import 'package:flutter/material.dart';
+import 'package:doanandroid/pages/login.dart';
+import 'package:doanandroid/util/uploadimage.dart';
+import 'package:doanandroid/util/server.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:loader_overlay/loader_overlay.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:doanandroid/util/user.dart';
+import 'package:uuid/uuid.dart';
+import 'package:image/image.dart' as ImD;
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:doanandroid/util/user.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:get/get.dart';
+
+User _user;
 
 class HomePage extends StatefulWidget {
+  final String text;
+
+  HomePage({Key key, @required this.text}) : super(key: key);
+
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  bool loadcomment = false;
+  bool didFetchComments = false;
+  bool _isLoaderVisible = false;
   List<Post> _posts;
   bool loadings = false;
+  File file = File('');
+  String s = 'notok';
+  Data _data;
+  bool uploading = false;
+  String base64Image;
+  String status = '';
+  String postId = Uuid().v4();
+  TextEditingController descriptionTextEditingController =
+      TextEditingController();
+  TextEditingController locationTextEditingController = TextEditingController();
+
+  final TextEditingController _commentController = TextEditingController();
 
   void initState() {
     super.initState();
@@ -32,11 +75,28 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void initState1() {
+    super.initState();
+    Profile.getUser().then((user) {
+      setState(() {
+        _user = user;
+        print('reload initstate');
+      });
+    });
+  }
+
   getpost() {
     Services.getPosts().then((posts) {
-      _posts = posts;
+      _posts = posts.obs;
       loadings = true;
       print('reload homepage');
+      return _posts;
+    });
+  }
+
+  getuser() {
+    Profile.getUser().then((user) {
+      _user = user;
     });
   }
 
@@ -92,6 +152,468 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  deletepost(String idpost) async {
+    String url = '${Server.deletepost}/$idpost';
+    final response = await http.post(Uri.parse(url));
+    if (response.statusCode == 200) {
+      log('xoa post xong roi nek');
+    }
+  }
+
+  captureImageWithCamera() async {
+    Navigator.pop(context);
+    File imagefile = await ImagePicker.pickImage(
+      source: ImageSource.camera,
+      maxHeight: 680,
+      maxWidth: 970,
+    );
+    setState(() {
+      s = 'ok';
+      this.file = imagefile;
+    });
+  }
+
+  pickImageFromGallery() async {
+    Navigator.pop(context);
+    File imagefile = await ImagePicker.pickImage(
+      source: ImageSource.gallery,
+    );
+    setState(() {
+      s = 'ok';
+      this.file = imagefile;
+    });
+  }
+
+  takeImage(mContext) {
+    return showDialog(
+      context: mContext,
+      builder: (context) {
+        return SimpleDialog(
+          title: Text(
+            "New Post",
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
+          children: <Widget>[
+            SimpleDialogOption(
+              child: Text(
+                "Capture Image with Camera",
+                style: TextStyle(
+                  color: Colors.black,
+                ),
+              ),
+              onPressed: captureImageWithCamera,
+            ),
+            SimpleDialogOption(
+              child: Text(
+                "Select Image from Gallery",
+                style: TextStyle(
+                  color: Colors.black,
+                ),
+              ),
+              onPressed: pickImageFromGallery,
+            ),
+            SimpleDialogOption(
+              child: Text(
+                "Cancel",
+                style: TextStyle(
+                  color: Colors.black,
+                ),
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  compressPhoto() async {
+    final tDirectory = await getTemporaryDirectory();
+    final path = tDirectory.path;
+    ImD.Image mImageFile = ImD.decodeImage(file.readAsBytesSync());
+    final compressedImageFile = File('$path/img_$postId.jpg')
+      ..writeAsBytesSync(ImD.encodeJpg(mImageFile, quality: 60));
+    setState(() {
+      file = compressedImageFile;
+    });
+  }
+
+  takepost(mContext, String id, String des, String local, String username,
+      String photo, String idpost) {
+    print(id);
+    print(des);
+    print(local);
+    print(photo);
+    print(idpost);
+    descriptionTextEditingController.text = des;
+    locationTextEditingController.text = local;
+    return showDialog(
+      context: mContext,
+      builder: (context) {
+        return SimpleDialog(
+          children: <Widget>[
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => displayUploadFormScreen(
+                            id, des, local, username, photo, idpost)));
+              },
+              child: Text(
+                "Edit",
+                style: TextStyle(
+                  color: Colors.black,
+                ),
+              ),
+            ),
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(context);
+                deletepost(idpost);
+              },
+              child: Text(
+                "Delete",
+                style: TextStyle(
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  displayUploadFormScreen(String id, String des, String local, String username,
+      String photo, String idpost) {
+    print('s in display: $s');
+    return LoaderOverlay(
+        useDefaultLoading: false,
+        overlayWidget: Center(
+          child: SpinKitCircle(
+            color: Colors.red,
+            size: 50.0,
+          ),
+        ),
+        overlayOpacity: 0.8,
+        child: Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            leading: IconButton(
+              icon: Icon(
+                Icons.arrow_back,
+                color: Colors.black,
+              ),
+              onPressed: clearPostInfo,
+            ),
+            title: Text(
+              "Back",
+              style: TextStyle(
+                  fontSize: 24.0,
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold),
+            ),
+            actions: <Widget>[
+              FlatButton(
+                child: Text(
+                  "Share",
+                  style: TextStyle(
+                      color: Colors.lightGreenAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16.0),
+                ),
+              ),
+            ],
+          ),
+          body: ListView(
+            children: <Widget>[
+              Container(
+                height: 230.0,
+                width: MediaQuery.of(context).size.width * 0.8,
+                child: Center(
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: Container(
+                      decoration: BoxDecoration(
+                          image: DecorationImage(
+                        image: s != 'ok' ? NetworkImage(id) : FileImage(file),
+                        fit: BoxFit.cover,
+                      )),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.only(top: 12.0),
+              ),
+              ListTile(
+                title: Container(
+                  width: 250.0,
+                  child: TextField(
+                    style: TextStyle(color: Colors.black),
+                    controller: descriptionTextEditingController,
+                    decoration: InputDecoration(
+                      hintText: "Say something about image.",
+                      hintStyle: TextStyle(color: Colors.black),
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+              ),
+              Divider(),
+              ListTile(
+                leading: Icon(Icons.person_pin_circle,
+                    color: Colors.black, size: 36.0),
+                title: Container(
+                  width: 250.0,
+                  child: TextField(
+                    style: TextStyle(color: Colors.black),
+                    controller: locationTextEditingController,
+                    decoration: InputDecoration(
+                      hintText: "Write the location here.",
+                      hintStyle: TextStyle(color: Colors.black),
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                width: 220.0,
+                height: 110.0,
+                alignment: Alignment.center,
+                child: RaisedButton.icon(
+                  onPressed: () {
+                    takeImage(context);
+                  },
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(35.0)),
+                  color: Colors.green,
+                  icon: Icon(
+                    Icons.photo,
+                    color: Colors.black,
+                  ),
+                  label: Text(
+                    "Change picture",
+                    style: TextStyle(color: Colors.black),
+                  ),
+                ),
+              ),
+              Container(
+                width: 220.0,
+                height: 110.0,
+                alignment: Alignment.center,
+                child: RaisedButton.icon(
+                  onPressed: () {
+                    context.loaderOverlay.show();
+                    startUpdate(username, photo, idpost, id);
+                  },
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(35.0)),
+                  color: Colors.green,
+                  icon: Icon(
+                    Icons.location_on,
+                    color: Colors.black,
+                  ),
+                  label: Text(
+                    "UPDATE",
+                    style: TextStyle(color: Colors.black),
+                  ),
+                ),
+              )
+            ],
+          ),
+        ));
+  }
+
+  startUpdate(String username, String photo, String idpost, String id) {
+    if (s == 'ok') {
+      String fileName = file.path.split('/').last;
+      upload(fileName, username, photo, idpost);
+    } else {
+      updatePost(username, photo, idpost, id);
+    }
+  }
+
+  upload(String fileName, String username, String photo, String idpost) async {
+    List<int> imageBytes = file.readAsBytesSync();
+    base64Image = base64.encode(imageBytes);
+    final request = http.MultipartRequest(
+      "POST",
+      Uri.parse(
+          'https://api.imgbb.com/1/upload?key=65a52e41be0d263e2c5e13284c1da0af'),
+    );
+    request.files.add(await http.MultipartFile.fromPath('image', file.path));
+    var res = await request.send();
+    final test = res.statusCode;
+    final response = await http.Response.fromStream(res);
+    _data = dataFromJson(response.body);
+    print(_data.data.url);
+    updatePost(username, photo, idpost, _data.data.url);
+    await Future.delayed(Duration(seconds: 5));
+    setState(() {
+      _isLoaderVisible = context.loaderOverlay.visible;
+    });
+    if (_isLoaderVisible) {
+      context.loaderOverlay.hide();
+    }
+  }
+
+  updatePost(String username, String photo, String idpost, String id) async {
+    final description = descriptionTextEditingController.text;
+    final location = locationTextEditingController.text;
+    final linkphoto = _data == null ? id : _data.data.url;
+    var data = {
+      'user': {"username": username, "photo": photo},
+      'linkphoto': linkphoto,
+      'body': description,
+      'location': location,
+    };
+    final sever = '${Server.setupdatepost}/$idpost';
+    String url = '$sever';
+    print(url);
+    final http.Response response = await http.post(Uri.parse(url),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(data));
+    print(response.body);
+    return clearPostInfo();
+  }
+
+  clearPostInfo() async {
+    locationTextEditingController.clear();
+    descriptionTextEditingController.clear();
+    Navigator.pop(context);
+    setState(() {
+      file = File('');
+      s = 'notok';
+    });
+  }
+
+  Widget Commentpage(String postid) {
+    return LoaderOverlay(
+        useDefaultLoading: false,
+        overlayWidget: Center(
+          child: SpinKitCircle(
+            color: Colors.red,
+            size: 50.0,
+          ),
+        ),
+        overlayOpacity: 0.8,
+        child: Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              icon: Icon(
+                Icons.arrow_back,
+                color: Colors.black,
+              ),
+              onPressed: () {
+                setState(() {
+                  loadcomment = false;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            iconTheme: IconThemeData(color: Colors.black),
+            title: Text(
+              "Comments",
+              style: TextStyle(color: Colors.black),
+            ),
+            backgroundColor: Colors.grey,
+          ),
+          body: buildPage(postid),
+        ));
+  }
+
+  Widget buildPage(String postid) {
+    return Column(
+      children: [
+        Expanded(
+          child: buildComments(postid),
+        ),
+        Divider(),
+        ListTile(
+          title: TextFormField(
+            controller: _commentController,
+            decoration: InputDecoration(labelText: 'Write a comment...'),
+            // onFieldSubmitted: comment(),
+          ),
+          trailing: OutlineButton(
+            onPressed: () {
+              log('full name in comment: ' + _user.fullname);
+              comment(
+                  postid, _user.fullname, _user.photo, _commentController.text);
+              _commentController.clear();
+            },
+            borderSide: BorderSide.none,
+            child: Text("Post"),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget buildComments(String idpost) {
+    getComment(idpost);
+    return Column(
+      children: List.generate(_comments.length, (index) {
+        Comment comment = _comments[index];
+        return LoaderOverlay(
+          overlayColor: Colors.black.withOpacity(0),
+          useDefaultLoading: false,
+          overlayWidget: Center(
+            child: SpinKitCircle(
+              color: Colors.red,
+              size: 50.0,
+            ),
+          ),
+          overlayOpacity: 0.8,
+          child: Row(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 30, 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    // gradient: LinearGradient(colors: bgStoryColors),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(1.3),
+                    child: Container(
+                      height: 30,
+                      width: 30,
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(width: 1, color: Colors.grey),
+                          image: DecorationImage(
+                              image: NetworkImage(comment.user.photo),
+                              fit: BoxFit.cover)),
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                child: Column(
+                  children: [
+                    Text(
+                      '${comment.user == null ? 0 : comment.user.username} : ${comment.detail}',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
   islike(String postid, int like, String username, String photo,
       int islike) async {
     int islikes = (islike == 1 ? 2 : 1);
@@ -124,7 +646,48 @@ class _HomePageState extends State<HomePage> {
     print(response.body);
   }
 
+  comment(String postid, String username, String photo, String detail) async {
+    log('dang them comment ne');
+    String isdetail = detail;
+    var data = {
+      'postid': postid,
+      'user': {'username': username, 'photo': photo},
+      'detail': isdetail
+    };
+    String url = '${Server.setcomment}';
+    print(url);
+    final http.Response response = await http.post(Uri.parse(url),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(data));
+    print(response.body);
+  }
+
+  List<Comment> _comments;
+
+  getComment(String idpost) {
+    svComments.getComment(idpost).then((comments) async {
+      await Future.delayed(Duration(seconds: 5));
+      log('dang load comment nek');
+      if (comments != null) {
+        setState(() {
+          _comments = comments;
+          loadcomment = true;
+          _isLoaderVisible = context.loaderOverlay.visible;
+        });
+        if (_isLoaderVisible) {
+          context.loaderOverlay.hide();
+        }
+        log('dang load xong comment roi  nek');
+        log('loadcoment : $loadcomment  ');
+      }
+      return loadcomment;
+    });
+  }
+
   Widget getBody(size) {
+    getpost();
     return ListView(
       children: [
         SingleChildScrollView(
@@ -215,6 +778,8 @@ class _HomePageState extends State<HomePage> {
         Column(
             children: List.generate(_posts.length, (index) {
           Post post = _posts[index];
+          // print(_comments.length);
+          TextEditingController commentcontroller = new TextEditingController();
           return Padding(
             padding: const EdgeInsets.only(bottom: 20),
             child: Column(
@@ -257,7 +822,21 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ],
                       ),
-                      Icon(FontAwesome.ellipsis_v, size: 15),
+                      IconButton(
+                        icon: Icon(
+                          FontAwesome.ellipsis_v,
+                          size: 15,
+                          color: Colors.black,
+                        ),
+                        onPressed: () => takepost(
+                            context,
+                            post.linkphoto,
+                            post.body,
+                            post.location,
+                            post.user.username,
+                            post.user.photo,
+                            post.id),
+                      ),
                     ],
                   ),
                 ),
@@ -310,7 +889,13 @@ class _HomePageState extends State<HomePage> {
                           IconButton(
                             splashRadius: 15,
                             icon: Icon(FontAwesome.comment_o, size: 25),
-                            onPressed: () {},
+                            onPressed: () {
+                              print('loadcomment trong inpress $loadcomment');
+                              getComment(post.postid);
+                              Navigator.pushNamed(
+                                  context, '/comment',
+                                  arguments: (post.postid));
+                            },
                           ),
                           IconButton(
                             splashRadius: 15,
@@ -348,67 +933,7 @@ class _HomePageState extends State<HomePage> {
                         ],
                       )),
                       SizedBox(height: 8),
-                      // Text(
-                      //   post.comment[1],
-                      //   style: TextStyle(color: textGrey),
-                      // ),
                       SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Container(
-                            width: (size.width - 30) * 0.7,
-                            child: Row(
-                              children: [
-                                Container(
-                                  height: 28,
-                                  width: 28,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(width: 1, color: bgGrey),
-                                    image: DecorationImage(
-                                        image: NetworkImage(post.user.photo),
-                                        fit: BoxFit.cover),
-                                  ),
-                                ),
-                                Container(
-                                  height: 25,
-                                  width: (size.width - 70) * 0.7,
-                                  child: Padding(
-                                    padding: EdgeInsets.only(
-                                        top: 10, left: 10, right: 10),
-                                    child: TextField(
-                                      cursorColor: textBlack.withOpacity(0.5),
-                                      decoration: InputDecoration(
-                                          border: InputBorder.none,
-                                          hintText: "Add a comment",
-                                          hintStyle: TextStyle(
-                                              fontSize: 14,
-                                              color:
-                                                  textBlack.withOpacity(0.5))),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            width: (size.width - 30) * 0.3,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Text("🥰"),
-                                SizedBox(width: 8),
-                                Text("😎"),
-                                SizedBox(width: 8),
-                                Icon(
-                                  Icons.add_circle_outline,
-                                  size: 20,
-                                )
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
                       SizedBox(height: 5),
                       Text(
                         post.datetime.toString(),

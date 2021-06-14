@@ -18,10 +18,11 @@ class RootApp extends StatefulWidget {
 
 class _RootAppState extends State<RootApp> {
   int indexPage = 0;
-  User _user;
   bool loadings = false;
   @override
   Widget build(BuildContext context) {
+    final  args = ModalRoute.of(context).settings.arguments;
+    print('arg in root page '+ args);
     return Scaffold(
       body: getBody(),
       bottomNavigationBar: getBottomNavigationBar(),
@@ -29,6 +30,7 @@ class _RootAppState extends State<RootApp> {
   }
 
   Widget getBody() {
+    GlobalKey sss = GlobalKey();
     return IndexedStack(
       index: indexPage,
       children: [

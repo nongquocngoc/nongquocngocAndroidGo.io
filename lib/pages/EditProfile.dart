@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'dart:convert';
+import 'package:doanandroid/util/services.dart';
 import 'package:flutter/cupertino.dart';
 import "package:flutter/material.dart";
 import 'package:doanandroid/util/user.dart';
@@ -13,6 +14,7 @@ import 'package:doanandroid/util/uploadimage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 class EditProfile extends StatefulWidget {
@@ -21,6 +23,7 @@ class EditProfile extends StatefulWidget {
 }
 
 class _EditProfileState extends State<EditProfile> {
+  bool _isLoaderVisible = false;
   User _user;
   bool loadings = false;
   String s = 'notok';
@@ -282,7 +285,7 @@ class _EditProfileState extends State<EditProfile> {
   updatePass() async {
     final password = confirmpasscontroller.text;
     var data = {'password': password};
-    String sever = Server.setuser;
+    String sever = Server.changepass;
     String id = _user.userid;
     String url = '$sever/$id';
     print(url);
@@ -438,7 +441,7 @@ class _EditProfileState extends State<EditProfile> {
         profilecontroller.text == null ? _user.profile : profilecontroller.text;
     var data = {'fullname': fullname, 'profile': profile, 'photo': linkphoto};
     String sever = Server.setupdateuser;
-    String id = _user.userid;
+    String id = _user.id;
     String url = '$sever/$id';
     print(url);
     print(fullname);
@@ -450,6 +453,16 @@ class _EditProfileState extends State<EditProfile> {
         },
         body: json.encode(data));
     print(response.body);
+    await Future.delayed(Duration(seconds: 3));
+    setState(() {
+      _isLoaderVisible = context.loaderOverlay.visible;
+    });
+    if (_isLoaderVisible) {
+      context.loaderOverlay.hide();
+    }
+    setState(() {
+      _isLoaderVisible = context.loaderOverlay.visible;
+    });
     return clearPostInfo();
   }
 
@@ -462,114 +475,128 @@ class _EditProfileState extends State<EditProfile> {
       });
     });
     return loadings == true
-        ? Scaffold(
-            appBar: AppBar(
-              backgroundColor: Colors.white,
-              iconTheme: IconThemeData(color: Colors.black),
-              title: Text(
-                "Edit Profile",
-                style: TextStyle(
-                  color: Colors.black,
-                ),
+        ? LoaderOverlay(
+            useDefaultLoading: false,
+            overlayWidget: Center(
+              child: SpinKitCircle(
+                color: Colors.red,
+                size: 50.0,
               ),
-              actions: <Widget>[
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: Icon(
-                    Icons.done,
-                    size: 30.0,
-                    color: Colors.green,
+            ),
+            overlayOpacity: 0.8,
+            child: Scaffold(
+              appBar: AppBar(
+                backgroundColor: Colors.white,
+                iconTheme: IconThemeData(color: Colors.black),
+                title: Text(
+                  "Edit Profile",
+                  style: TextStyle(
+                    color: Colors.black,
                   ),
                 ),
-              ],
-            ),
-            body: ListView(
-              children: <Widget>[
-                Container(
-                  child: Column(
-                    children: <Widget>[
-                      Padding(
-                        padding: EdgeInsets.only(
-                          top: 16.0,
-                          bottom: 8.0,
+                actions: <Widget>[
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.done,
+                      size: 30.0,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+              body: ListView(
+                children: <Widget>[
+                  Container(
+                    child: Column(
+                      children: <Widget>[
+                        Padding(
+                          padding: EdgeInsets.only(
+                            top: 16.0,
+                            bottom: 8.0,
+                          ),
+                          child: Column(
+                            children: <Widget>[
+                              Container(
+                                  height: 100,
+                                  width: 100,
+                                  decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                          width: 1, color: Colors.red),
+                                      image: DecorationImage(
+                                          image: s != ('ok')
+                                              ? NetworkImage(_user.photo)
+                                              : FileImage(file),
+                                          fit: BoxFit.cover))),
+                              RaisedButton(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(9.0),
+                                ),
+                                child: Text(
+                                  "Change avatar",
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 20.0),
+                                ),
+                                color: Colors.green,
+                                onPressed: () => takeImage(context),
+                              ),
+                            ],
+                          ),
                         ),
-                        child: Column(
-                          children: <Widget>[
-                            Container(
-                                height: 100,
-                                width: 100,
-                                decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border:
-                                        Border.all(width: 1, color: Colors.red),
-                                    image: DecorationImage(
-                                        image: s != ('ok')
-                                            ? NetworkImage(_user.photo)
-                                            : FileImage(file),
-                                        fit: BoxFit.cover))),
-                            RaisedButton(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(9.0),
-                              ),
-                              child: Text(
-                                "Change avatar",
-                                style: TextStyle(
-                                    color: Colors.white, fontSize: 20.0),
-                              ),
-                              color: Colors.green,
-                              onPressed: () => takeImage(context),
+                        Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Column(
+                            children: <Widget>[
+                              buildDisplayNameField(),
+                              buildBioField(),
+                            ],
+                          ),
+                        ),
+                        RaisedButton(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(9.0),
+                          ),
+                          child: Text(
+                            "Change password",
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 20.0),
+                          ),
+                          color: Colors.green,
+                          onPressed: () => changePass(context),
+                        ),
+                        Divider(),
+                        RaisedButton(
+                          onPressed: () {
+                            context.loaderOverlay.show();
+                            startUpload();
+                          },
+                          child: Text(
+                            "Update Profile",
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 20.0,
+                              fontWeight: FontWeight.bold,
                             ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Column(
-                          children: <Widget>[
-                            buildDisplayNameField(),
-                            buildBioField(),
-                          ],
-                        ),
-                      ),
-                      RaisedButton(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(9.0),
-                        ),
-                        child: Text(
-                          "Change password",
-                          style: TextStyle(color: Colors.white, fontSize: 20.0),
-                        ),
-                        color: Colors.green,
-                        onPressed: () => changePass(context),
-                      ),
-                      Divider(),
-                      RaisedButton(
-                        onPressed: () => startUpload(),
-                        child: Text(
-                          "Update Profile",
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 20.0,
-                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: FlatButton.icon(
-                          icon: Icon(Icons.cancel, color: Colors.red),
-                          label: Text(
-                            "Logout",
-                            style: TextStyle(color: Colors.red, fontSize: 20.0),
+                        Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: FlatButton.icon(
+                            icon: Icon(Icons.cancel, color: Colors.red),
+                            label: Text(
+                              "Logout",
+                              style:
+                                  TextStyle(color: Colors.red, fontSize: 20.0),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          )
+                ],
+              ),
+            ))
         : loading();
   }
 }

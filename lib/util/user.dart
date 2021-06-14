@@ -53,9 +53,9 @@ class User {
     photo: json["photo"],
     lastlogin: DateTime.parse(json["lastlogin"]),
     profile: json["profile"],
-    follower: List<String>.from(json["follower"].map((x) => x)),
-    following: List<String>.from(json["following"].map((x) => x)),
-    post: List<String>.from(json["post"].map((x) => x)),
+    post: json["post"] == null ? null : List<String>.from(json["post"].map((x) => x)),
+    follower: json["follower"] == null ? null : List<String>.from(json["follower"].map((x) => x)),
+    following: json["following"] == null ? null : List<String>.from(json["following"].map((x) => x)),
   );
 
   Map<String, dynamic> toJson() => {
@@ -70,8 +70,8 @@ class User {
     "photo": photo,
     "lastlogin": lastlogin.toIso8601String(),
     "profile": profile,
-    "follower": List<dynamic>.from(follower.map((x) => x)),
-    "following": List<dynamic>.from(following.map((x) => x)),
-    "post": List<dynamic>.from(post.map((x) => x)),
+    "post": post == null ? null : List<dynamic>.from(post.map((x) => x)),
+    "follower": follower == null ? null : List<dynamic>.from(follower.map((x) => x)),
+    "following": following == null ? null : List<dynamic>.from(following.map((x) => x)),
   };
 }
